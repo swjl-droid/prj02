@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prj02: Family orchestrator</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; color: #1f2937; }
+    code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    #health { margin-top: 1.5rem; padding: 1rem; border: 1px solid #d1d5db; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>prj02: Family orchestrator</h1>
+  <p>Placeholder page. It proves the pipeline: GitHub pull request, Vercel build, function in Singapore.</p>
+  <div id="health">Checking <code>/api/health</code>...</div>
+  <script>
+    fetch('/api/health')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        document.getElementById('health').textContent =
+          'Health: ' + (d.ok ? 'ok' : 'not ok') + ' (app ' + d.app + ', region ' + d.region + ', ' + d.at + ')';
+      })
+      .catch(function (e) { document.getElementById('health').textContent = 'Health check failed: ' + e; });
+  </script>
+</body>
+</html>
