@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  gateway:
+    name: Gateway copy and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - name: Copy matches its stamp (never edit lib/gateway here; change ai-platform/gateway)
+        run: node lib/gateway/stamp.mjs verify lib/gateway
+      - name: Gateway unit tests (cost, masking, trace content, certificate check)
+        run: node --test 'lib/gateway/test/*.test.js'
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: bash scripts/ci/secret_scan.sh .

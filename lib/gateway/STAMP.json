@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "source": "swjl-droid/ai-platform",
+  "commit": "203fe6c8847b83d0edb935bc04e431ba34855635",
+  "files": {
+    "README.md": "a1cac910490dbcd1798f90ca654c1c5b79de65e86aa09e0367e3e7e436090989",
+    "VERSION": "59854984853104df5c353e2f681a15fc7924742f9a2e468c29af248dce45ce03",
+    "db.js": "27792582c7fbdf31b6f3593bbbfbe66665adfe332df3bd9867f11c240811c391",
+    "index.js": "dc211db273f8a82df6da91c0a74ddc0e16890a1cadf704a187e6fa9324ceea73",
+    "mask.js": "8e0c0469c5623466e39213128abd00fcfa9878a2352170dd6d51b69b1a61ca3f",
+    "pricing.js": "d7fcf1d2d5019d592c953827a005daa308cd0fa047c92b64b8c58f97f3902bbc",
+    "stamp.mjs": "21d17248488b8adc93abbd0c36663dd398e849af3f377261be7aaba8a4b3725c",
+    "supabase-root-2021.crt": "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+    "test/db.test.js": "46b027643a6991a9524de3a17343ca363c9e5f14eb54e2fd99b8430fd724a0c0",
+    "test/gateway.test.js": "e301e7888e626dab4967919b9203f50e0d6d0ae14b8fe03affc413ad1fe47b14",
+    "test/mask.test.js": "3d5bd0cbd3b15ce480522c888a3156c3d3227c5c1417c50a40e9439ec508f1c3",
+    "test/pricing.test.js": "ed37ac6e869cbd58a01a95a4db55faece76552c2fd0e28c189eb4516328041be",
+    "test/trace.test.js": "4c7eec92f7aeff697adf598c727e0c8de3ccfff2930add226ebf7236d5705190",
+    "trace.js": "6c3f2852cc86cb1a3c3b6f632ed00d4b6c435cd24e5f913a7104d0be75e50a12"
+  }
+}
