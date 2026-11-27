@@ -1,0 +1,7 @@
+{
+  "_comment": "prj02 settings (Hub row 128: every number a setting). Change here, not in code.",
+  "notice_version": "v1",
+  "notice_path": "/privacy.html",
+  "invite_hours": 48,
+  "max_display_name": 80
+}
