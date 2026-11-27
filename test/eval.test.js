@@ -10,7 +10,7 @@ const golden = JSON.parse(readFileSync(new URL('../eval/calendar-golden.json', i
 test('the checker catches all planted wrong answers', () => {
   const s = selfTest(golden);
   assert.equal(s.caught, s.total);
-  assert.equal(golden.cases.length, 20);
+  assert.equal(golden.cases.length, 23);
 });
 
 test('a perfect set of model forms passes the checker after checkForm', () => {
@@ -31,6 +31,8 @@ test('a perfect set of model forms passes the checker after checkForm', () => {
     c16: { intent: 'not_calendar' }, c17: { intent: 'unclear', question: 'Which date?' },
     c18: { intent: 'add', title: 'Lunch with in-laws', date: '2026-11-29', start: '12:00' },
     c19: { intent: 'unclear', question: 'Which event?' }, c20: { intent: 'unclear', question: 'To what time?' },
+    c21: { intent: 'show', date_from: '2026-11-27', date_to: '2026-11-27' }, c22: { intent: 'show', date_from: '2026-11-28' },
+    c23: { intent: 'show', date_from: '2026-11-27', date_to: '2026-11-29' },
   };
   const answers = Object.fromEntries(Object.entries(forms).map(([k, f]) => [k, checkForm(f, golden.today)]));
   const s = score(golden, answers);
