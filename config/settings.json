@@ -22,5 +22,8 @@
     "t\\.me/",
     "\\b(send|forward)\\b[\\s\\S]{0,60}(@[A-Za-z][A-Za-z0-9_]{4,}|\\b\\d{6,15}\\b|telegram)"
   ],
-  "_limits": "prj02-R1 US-4: run_max_steps and run_max_cost_usd cap each model run (the L2 limits of BS-2); the per-family limits (30 bot messages a day, US$5 a week) are family settings in the database. Patterns: requests to share outside the family (AI-L08 case 1) and event text that tries to instruct the bot (AI-L08 case 2); matched case-insensitively."
+  "_limits": "prj02-R1 US-4: run_max_steps and run_max_cost_usd cap each model run (the L2 limits of BS-2); the per-family limits (30 bot messages a day, US$5 a week) are family settings in the database. Patterns: requests to share outside the family (AI-L08 case 1) and event text that tries to instruct the bot (AI-L08 case 2); matched case-insensitively.",
+  "stay_gap_minutes": 15,
+  "plan_valid_minutes": 30,
+  "plan_model": "claude-haiku-5-5"
 }
