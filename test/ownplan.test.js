@@ -189,3 +189,17 @@ test('own plan pending: an attempt to share outside the family is still refused 
   assert.deepEqual(calls, []);
 });
 
+
+test('stay rule after the first event has ended: a scan at 15:05 still knows the school day ended at 15:00', async () => {
+  const db = fakeTripsDb({ settings: { ...S }, adults: [JOHN, MEI], modes: MODES });
+  const now = at('2026-11-27T15:05:00');
+  db.setClock(() => now.getTime());
+  const day = [ev('school', 'UWC school day', '2026-11-27T08:00', '2026-11-27T15:00', UWC),
+    ev('violin', 'UWC Violin', '2026-11-27T15:10', '2026-11-27T16:30', UWC)];
+  // Like Google: events that end after timeMin.
+  const google = { list: async (_c, from) => day.filter((e) => Date.parse(e.end.dateTime) > Date.parse(from)) };
+  await tickFamily(await db.job.load(), { job: db.job, google, onemap }, now);
+  const violin = db.trips.find((t) => t.event_id === 'violin');
+  assert.equal(violin.drop_needed, false, 'no drop-off: the children are already at UWC');
+  assert.equal(db.trips.some((t) => t.event_id === 'school'), false, 'an event that has ended does not become a trip');
+});
