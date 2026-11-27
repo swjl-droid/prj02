@@ -8,6 +8,7 @@ import { isFromTelegram, parseUpdate, telegramClient } from '../lib/channel/tele
 import { handle } from '../lib/bot/join.js';
 import { inTransaction } from '../lib/db.js';
 import { botConfig } from '../lib/config.js';
+import { realDeps } from '../lib/bot/deps.js';
 
 let botUsername;
 
@@ -23,7 +24,8 @@ export async function POST(request) {
   const tg = telegramClient(token);
   try {
     if (!botUsername) botUsername = (await tg.call('getMe')).username;
-    const replies = await inTransaction((store) => handle(msg, store, botConfig({ botUsername })));
+    const cfg = botConfig({ botUsername });
+    const replies = await inTransaction((store) => handle(msg, store, cfg, realDeps(cfg)));
     if (msg.callbackId) await tg.answerButton(msg.callbackId).catch(() => {});
     for (const r of replies) await tg.send(msg.chatId, r);
     return Response.json({ ok: true, replies: replies.length });

@@ -3,5 +3,9 @@
   "notice_version": "v1",
   "notice_path": "/privacy.html",
   "invite_hours": 48,
-  "max_display_name": 80
+  "max_display_name": 80,
+  "calendar_model": "claude-haiku-5-5",
+  "change_valid_minutes": 30,
+  "default_event_minutes": 60,
+  "search_days": 14
 }
