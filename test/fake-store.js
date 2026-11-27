@@ -1,7 +1,7 @@
 // In-memory stand-in for the app_prj02 functions (same answers as the SQL in
 // ai-platform supabase/migrations/*_prj02_tenancy.sql), so the bot logic is tested without a database.
 export function fakeDb() {
-  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0 };
+  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0, calendars: {}, changes: [] };
   const id = (p) => `${p}-${++db.seq}`;
   const norm = (c) => String(c ?? '').replace(/\s/g, '').toLowerCase();
   db.addFamily = (name, code, isAdmin = true, hoursLeft = 48) => {
@@ -63,6 +63,32 @@ export function fakeDb() {
         return { 'app_prj02.people': 1 };
       },
       async noteRefusal() { db.refusals += 1; },
+      // Calendar (same answers as propose_change / decide_change / record_result).
+      async calendar() { return cur ? (db.calendars[cur.family_id] ?? null) : null; },
+      async proposeChange(action, eventId, proposal, minutes) {
+        if (!cur) throw new Error('no request context');
+        const ch = { id: `00000000-0000-4000-8000-${String(++db.seq).padStart(12, '0')}`, family_id: cur.family_id,
+          person_id: cur.person_id, action, event_id: eventId, proposal: JSON.parse(JSON.stringify(proposal)),
+          status: 'proposed', expires: Date.now() + minutes * 60e3 };
+        db.changes.push(ch);
+        return ch.id;
+      },
+      async decideChange(id, yes) {
+        if (!cur) throw new Error('no request context');
+        const c = db.changes.find((x) => x.id === id && x.family_id === cur.family_id);
+        if (!c) return { ok: false, reason: 'unknown' };
+        if (c.person_id !== cur.person_id) return { ok: false, reason: 'not_yours' };
+        if (c.status !== 'proposed') return { ok: false, reason: c.status };
+        if (c.expires <= Date.now()) { c.status = 'expired'; return { ok: false, reason: 'expired' }; }
+        c.status = yes ? 'approved' : 'declined';
+        return yes ? { ok: true, status: 'approved', action: c.action, event_id: c.event_id, proposal: c.proposal } : { ok: true, status: 'declined' };
+      },
+      async recordResult(id, ok, eventId, error) {
+        const c = db.changes.find((x) => x.id === id && x.status === 'approved');
+        if (!c) return false;
+        c.status = ok ? 'applied' : 'failed'; c.event_id = eventId ?? c.event_id; c.error = error;
+        return true;
+      },
     };
   };
   return db;

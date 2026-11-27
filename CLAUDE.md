@@ -11,7 +11,9 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 | `api/telegram.js` | Telegram webhook: secret header check, then one database transaction per message |
 | `api/telegram-setup.js` | Points the bot at production, sets commands and the profile texts with the privacy link (production only, no input) |
 | `lib/channel/telegram.js` | Channel layer (Hub row 116): everything Telegram-specific; a WhatsApp file can sit beside it later |
-| `lib/bot/` | Bot logic, channel-free (`join.js`: join flow and access rules, prj02-R1 US-1) |
+| `lib/bot/` | Bot logic, channel-free: `join.js` join flow and access rules (US-1); `calendar.js` calendar changes by chat, written only after the asking adult's yes (US-2); `interpret.js` the model fills a form, the code checks it; `deps.js` real gateway and Google helpers |
+| `lib/calendar/` | `google.js` Google Calendar through the bot's service account (`GOOGLE_SA_KEY`); `dates.js` dates in the family's time zone |
+| `eval/` | Golden set of noisy calendar requests and its checker (with self-test); live run on a preview at `/api/eval-calendar` |
 | `lib/db.js` | Role `app_prj02_bot` over `APP_DB_URL`, certificate checked; `begin_request()` per message (Hub row 249) |
 | `config/settings.json` | Every number a setting (Hub row 128): notice version, invite hours, ... |
 | `public/privacy.html` | Privacy and data notice (shared 10-section template, Hub row 142); bump `notice_version` when it changes |
@@ -27,3 +29,5 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 4. Secrets (names listed in the ai-platform CLAUDE.md): `TELEGRAM_BOT_TOKEN`, `APP_DB_URL`, and the
    gateway's. The webhook secret is derived from the bot token.
 5. Children do not use the bot in release 1 (Hub rows 127 and 155).
+6. The model only fills a form (`calendar_request` tool); code checks every field and decides. No calendar
+   write without a `decide_change()` yes from the adult who asked.
