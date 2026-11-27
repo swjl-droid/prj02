@@ -13,7 +13,7 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 | `lib/channel/telegram.js` | Channel layer (Hub row 116): everything Telegram-specific; a WhatsApp file can sit beside it later |
 | `lib/bot/` | Bot logic, channel-free: `join.js` join flow and access rules (US-1); `calendar.js` calendar changes by chat, written only after the asking adult's yes (US-2); `interpret.js` the model fills a form, the code checks it; `deps.js` real gateway and Google helpers |
 | `api/tick.js` | The scheduler's tick (ADR-02): Supabase Cron calls it every minute; role `app_prj02_job` over `JOB_DB_URL`; sends after commit |
-| `lib/trips/` | US-3: `plan.js` leave times, quiet hours, clashes, the US-6 stay rule (code does the sums); `tick.js` scan, plan round, due messages; `messages.js` texts |
+| `lib/trips/` | US-3: `plan.js` leave times, quiet hours, clashes, the US-6 stay rule (code does the sums); `who.js` US-7 who each event is for (family convention, children and aliases); `tick.js` scan, plan round, due messages; `messages.js` texts |
 | `lib/bot/limits.js`, `lib/bot/guard.js` | US-4: step and cost caps per model run (one Langfuse session per run); red-team guards (sharing outside the family, instructions in event notes), patterns in `config/settings.json` |
 | `lib/bot/plan.js` | US-6: the adult's own plan for a clash ("My own plan…"): the model fills the `trip_plan` form, code checks it and does the times, only the writer's Yes applies it (`plan_decide`) |
 | `lib/bot/trips.js` | Taps on 'who takes it?' and clash options (`assign_trips`), and "what's on" answers |
@@ -35,7 +35,8 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 3. Nothing personal in logs: error kinds only, never message text, names or account numbers.
 4. Secrets (names listed in the ai-platform CLAUDE.md): `TELEGRAM_BOT_TOKEN`, `APP_DB_URL`, `JOB_DB_URL`,
    `GOOGLE_SA_KEY`, `ONEMAP_EMAIL`, `ONEMAP_PASSWORD`, and the gateway's. The webhook secret is derived from the bot token.
-5. Children do not use the bot in release 1 (Hub rows 127 and 155).
+5. Children do not use the bot in release 1 (Hub rows 127 and 155). The bot keeps only their names and
+   nicknames as an adult enters them (`/children`, data notice v2), to know who each event is for.
 7. No bot-started message in quiet hours; each message is claimed once (never sent twice); drop-off and
    pick-up reminders exist only after an adult's tap.
 8. Limits (US-4): every model call goes through `withRunLimits` (8 steps, US$0.50 per run); the chat bot
