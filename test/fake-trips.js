@@ -4,8 +4,8 @@
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
 
-export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone = 'Asia/Singapore' }) {
-  const db = { trips: [], reminders: [], places: new Map(), settings: { ...settings }, adults, sent: [], plans: [] };
+export function fakeTripsDb({ settings, adults, modes, children = [], convention = { kind: 'suffix', separator: ' - ' }, country = 'SG', timeZone = 'Asia/Singapore' }) {
+  const db = { trips: [], reminders: [], places: new Map(), settings: { ...settings }, adults, sent: [], plans: [], children: children.map((c) => ({ aliases: [], ...c })), convention };
   const iso = (d) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString());
   let clock = () => Date.now();
   db.setClock = (fn) => { clock = fn; };
@@ -14,7 +14,8 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     families: async () => ['fam-1'],
     begin: async () => true,
     load: async () => ({ family_id: 'fam-1', country, settings: db.settings, calendar_id: 'cal', time_zone: timeZone,
-      home: db.settings.home_lat != null ? { lat: db.settings.home_lat, lng: db.settings.home_lng } : null, adults, modes }),
+      home: db.settings.home_lat != null ? { lat: db.settings.home_lat, lng: db.settings.home_lng } : null, adults, modes,
+      convention: db.convention, children: db.children }),
     places: async () => new Map(db.places),
     savePlace: async (k, lat, lng, min, source, route = 'drive') => { db.places.set(`${route}|${k}`, { drive_min: min, source, lat, lng }); },
     upsertTrip: async (t) => {
@@ -22,7 +23,8 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
       if (!x) { x = { id: uuid(), status: 'open', owner_person_id: null, owner_mode: null, hold_state: 'none' }; db.trips.push(x); }
       Object.assign(x, { event_id: t.event_id, event_start: iso(t.start), event_end: iso(t.end), title: t.title, location: t.location,
         drive_min: t.drive_min, drive_source: t.drive_source, drop_leave_at: iso(t.drop_leave), pick_leave_at: iso(t.pick_leave),
-        drop_send_at: iso(t.drop_send), pick_send_at: iso(t.pick_send), drop_needed: t.drop_needed ?? true, pick_needed: t.pick_needed ?? true });
+        drop_send_at: iso(t.drop_send), pick_send_at: iso(t.pick_send), drop_needed: t.drop_needed ?? true, pick_needed: t.pick_needed ?? true,
+        child_ids: t.child_ids ?? [], who_state: x.who_state === 'none_by_adult' ? 'none_by_adult' : (t.who_state ?? 'child'), unknown_name: t.unknown_name ?? null });
       if (x.status === 'cancelled') x.status = 'open';
       for (const r of db.reminders) if (r.trip_id === x.id && r.status === 'due' && (r.kind === 'drop' || r.kind === 'pick')) r.send_at = r.kind === 'drop' ? x.drop_send_at : x.pick_send_at;
       for (const r of db.reminders) if (r.trip_id === x.id && r.status === 'due' && ((r.kind === 'drop' && !x.drop_needed) || (r.kind === 'pick' && !x.pick_needed))) r.status = 'skipped';
@@ -40,7 +42,7 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     trips: async (from, to) => db.trips.filter((t) => t.event_start >= iso(from) && t.event_start < iso(to)).sort((a, b) => a.event_start.localeCompare(b.event_start)),
     trip: async (id) => db.trips.find((t) => t.id === id) ?? null,
     queue: async (trip, kind, person, at, payload) => {
-      if (!['plan', 'clash', 'warning'].includes(kind)) throw new Error('the job queues only plan, clash and warning messages');
+      if (!['plan', 'clash', 'warning', 'unknown', 'double'].includes(kind)) throw new Error('the job queues only plan, clash, warning, unknown and double messages');
       if (db.settings.paused_at) return false; // paused: nothing new is queued
       if (db.reminders.some((r) => r.trip_id === trip && r.kind === kind && r.person_id === person)) return false;
       db.reminders.push({ id: uuid(), trip_id: trip, kind, person_id: person, send_at: iso(at), status: 'due', payload: payload ?? {} });
@@ -112,6 +114,20 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
       }
       p.status = 'applied'; db.settings.last_scan_at = null;
       return { ok: true, status: 'applied', trips: p.proposal.length };
+    },
+    children: async () => db.children,
+    resolveUnknown: async (trip, child) => {
+      const t = db.trips.find((x) => x.id === trip && x.who_state === 'unknown');
+      if (!t) return { ok: false, reason: 'unknown' };
+      if (child) {
+        const c = db.children.find((x) => x.id === child);
+        if (!c || c.aliases.length >= 10) return { ok: false, reason: 'bad_child' };
+        if (!c.aliases.includes(t.unknown_name)) c.aliases.push(t.unknown_name);
+        Object.assign(t, { who_state: 'child', child_ids: [child] });
+      } else t.who_state = 'none_by_adult';
+      for (const r of db.reminders) if (r.trip_id === trip && r.kind === 'unknown' && r.status === 'due') r.status = 'skipped';
+      db.settings.last_scan_at = null;
+      return { ok: true, as_child: !!child };
     },
     releaseTrip: async (id) => {
       const t = db.trips.find((x) => x.id === id);

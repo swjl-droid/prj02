@@ -1,7 +1,7 @@
 // In-memory stand-in for the app_prj02 functions (same answers as the SQL in
 // ai-platform supabase/migrations/*_prj02_tenancy.sql), so the bot logic is tested without a database.
 export function fakeDb() {
-  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0, calendars: {}, changes: [], paused: {}, weekCost: {}, weekMax: 5 };
+  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0, calendars: {}, changes: [], paused: {}, weekCost: {}, weekMax: 5, children: [] };
   const id = (p) => `${p}-${++db.seq}`;
   const norm = (c) => String(c ?? '').replace(/\s/g, '').toLowerCase();
   db.addFamily = (name, code, isAdmin = true, hoursLeft = 48) => {
@@ -70,6 +70,20 @@ export function fakeDb() {
         return { paused: !!db.paused[cur.family_id], week_cost_usd: db.weekCost[cur.family_id] ?? 0, week_max_usd: db.weekMax };
       },
       async planPending() { return null; },
+      // Children (US-7), as child_save / child_remove for the current person's family.
+      async children() { return db.children.filter((c) => c.family_id === cur.family_id); },
+      async childSave(name, aliases) {
+        if ((aliases ?? []).length > 10) return { ok: false, reason: 'too_many' };
+        let c = db.children.find((x) => x.family_id === cur.family_id && x.name.toLowerCase() === name.toLowerCase());
+        if (!c) { c = { id: `${id('c')}-0000-4000-8000-000000000000`, family_id: cur.family_id, name }; db.children.push(c); }
+        c.aliases = [...new Set(aliases ?? [])];
+        return { ok: true, child: c.id };
+      },
+      async childRemove(name) {
+        const n = db.children.length;
+        db.children = db.children.filter((x) => !(x.family_id === cur.family_id && x.name.toLowerCase() === name.toLowerCase()));
+        return db.children.length < n ? { ok: true } : { ok: false, reason: 'unknown' };
+      },
       async adultChats() {
         return db.people.filter((p) => p.family_id === cur.family_id)
           .map((p) => ({ person_id: p.id, chat: db.contacts.find((c) => c.person_id === p.id)?.external_id }));

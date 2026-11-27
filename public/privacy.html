@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>Family orchestrator: privacy and data notice</h1>
-  <p class="meta">Version v1, 27 November 2026 (Singapore time). Telegram bot of the Family orchestrator prototype (prj02).</p>
+  <p class="meta">Version v2, 27 November 2026 (Singapore time). What changed since v1: the children's names and nicknames the adults enter (sections 3 and 8). Telegram bot of the Family orchestrator prototype (prj02).</p>
   <p class="note">This is a prototype for one family. Before it is opened to other families, this notice will be reviewed by someone qualified in Singapore law.</p>
 
   <h2>1. Who runs it</h2>
@@ -26,6 +26,7 @@
   <ul>
     <li><strong>About you:</strong> your name as shown in Telegram, your Telegram account number, whether you are a family admin, and when you agreed to this notice. Used to recognise you and keep others out.</li>
     <li><strong>About the family:</strong> the family's name and country, one-time join links (kept only as a scrambled fingerprint), and, from the next steps of release 1, the calendar changes you ask for and a log of what the bot did. Used to run the calendar features and to check them.</li>
+    <li><strong>About the children:</strong> the names and nicknames of the family's children, as an adult enters them with /children, and which child each calendar event is for. Used only to plan drop-offs, pick-ups and clashes per child. Deleted with the family, or by an adult with /children remove.</li>
     <li><strong>Not kept:</strong> message content in AI logs (only cost, timing and status are logged), and nothing from your other Telegram chats.</li>
   </ul>
 
@@ -52,7 +53,7 @@
   <p>Please do not send passwords, bank or card details, NRIC numbers, health information or anything about people outside the family.</p>
 
   <h2>8. Children</h2>
-  <p>Children do not use the bot in this release and are never invited to it. Calendar events about children are handled by the adults. A children's mode, with extra safeguards and a parent's approval for each child, may come in a later release.</p>
+  <p>Children do not use the bot in this release and are never invited to it. Calendar events about children are handled by the adults. The bot keeps only the children's names and nicknames that an adult enters, to know who each event is for; nothing else about them. A children's mode, with extra safeguards and a parent's approval for each child, may come in a later release.</p>
 
   <h2>9. Limits and responsibility</h2>
   <p>This is a prototype: reminders or clash alerts may be late, wrong or missing. Keep checking the family calendar yourself; the bot is a helper, not a guarantee.</p>
