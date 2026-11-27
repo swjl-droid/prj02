@@ -62,7 +62,11 @@ test('clash message: option 3 (John does both in a row), tapped: reminders per l
   assert.match(clash.reply.text, /Option 3: John does both: leave 14:54: Ballet @ River 15:03, then Acro @ Dunearn 15:20; wait there; pick up Acro @ Dunearn 17:00, then Ballet @ River 17:17; home ~17:41\./);
   assert.deepEqual(clash.reply.buttons[0].map((b) => b.label), ['Option 1', 'Option 2', 'Option 3']);
   const [done] = await handleTripButton(clash.reply.buttons[0][2].action, { person_id: JOHN.person_id }, db.botStore(JOHN.person_id), { timeZone: TZ });
-  assert.match(done.text, /^Chosen by John at \d\d:\d\d:\nDone/);
+  // John's gap of 27/11 (Hub row 319): the reply quotes Option 3 as offered, and says where each leave is from.
+  const offered = clash.reply.text.split('\n').find((l) => l.startsWith('Option 3: '));
+  assert.equal(done.text.split('\n')[0].replace(/^Chosen by John at \d\d:\d\d: /, ''), offered);
+  assert.equal(done.text.split('\n')[1],
+    'Reminders: 14:54 leave home for Ballet; 15:05 leave River for Acro; 16:55 pick-up of Acro (you are there); 17:02 leave Dunearn for Ballet.');
   assert.equal(done.edit, true, 'the clash message is replaced: no options left to tap');
   assert.deepEqual(done.buttons.flat().map((b) => b.label), ['My own plan…']);
   const due = db.reminders.filter((m) => m.status === 'due' && ['drop', 'pick'].includes(m.kind))
