@@ -62,7 +62,8 @@ test('Option 1 tapped: one adult waits there; the message shows the choice; a se
   db.setClock(() => at('2026-11-27T20:08:16').getTime());
   const [done] = await handleTripButton(msg.reply.buttons[0][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ, now: () => at('2026-11-27T20:08:16') });
   assert.equal(done.edit, true);
-  assert.match(done.text, /^Chosen by John at 20:08:\nDone: AF - Ang \(Sat 28 Nov, 09:30-11:30\): John L takes it \(waits there\)\. Reminders: leave 09:04 for drop-off, waiting there, pick-up at 11:30 \(reminder 11:25\)\./);
+  assert.equal(done.text.split('\n')[0], `Chosen by John at 20:08: ${msg.reply.text.split('\n').find((l) => l.startsWith('Option 1: '))}`, 'the option as offered');
+  assert.equal(done.text.split('\n')[1], 'Reminders: 09:04 leave home for AF; 11:25 pick-up of AF (you are there).');
   assert.deepEqual(done.buttons.flat().map((b) => b.label), ['My own plan…'], 'no options left to tap');
   const t = db.trips[0];
   assert.equal(t.wait_there, true);
@@ -89,7 +90,7 @@ test("Other ways…: how, then who; one adult goes straight to the choice; two a
   const publicBack = how.buttons.flat().find((b) => b.label === 'Car there, public transport back').action;
   const [done] = await handleTripButton(publicBack, { person_id: JOHN.person_id }, store, { timeZone: TZ });
   assert.equal(done.edit, true);
-  assert.match(done.text, /John L takes it \(pick-up: public transport\)\. Reminders: leave 09:04 for drop-off, 10:50 for pick-up\./);
+  assert.match(done.text, /: John drives there \(leave 09:04\), public transport back \(leave 10:50\)\.\nReminders: 09:04 leave home for AF; 10:50 public transport back from AF\./);
   const [back] = await handleTripButton(`ob:${m.slice(3)}`, { person_id: JOHN.person_id }, store, { timeZone: TZ });
   assert.deepEqual(back.buttons.map((r) => r.length), [3, 1, 1]);
 
@@ -101,7 +102,7 @@ test("Other ways…: how, then who; one adult goes straight to the choice; two a
   const [who] = await handleTripButton(split, { person_id: JOHN.person_id }, s2, { timeZone: TZ });
   assert.deepEqual(who.buttons.flat().map((b) => b.label), ['John', 'John there, Mei back', 'Mei there, John back', 'Mei', '« Back']);
   const [done2] = await handleTripButton(who.buttons[1][0].action, { person_id: JOHN.person_id }, s2, { timeZone: TZ });
-  assert.match(done2.text, /John L takes it \(pick-up: Mei\)/);
+  assert.match(done2.text, /: John drives there \(leave 09:04\), Mei picks up \(leave 11:09\)\.\nReminders: 09:04 leave home for AF; 11:09 leave home to pick up from AF \(Mei\)\./);
   assert.equal(two.db.reminders.find((r) => r.kind === 'pick' && r.status === 'due').person_id, MEI.person_id, 'Mei gets the pick-up reminder');
   // A made-up adult in the button: refused.
   const fake = who.buttons[1][0].action.replace(/:[0-9a-f]{8}$/, ':deadbeef');
@@ -196,11 +197,12 @@ test('a clash, Other ways…: one activity at a time, then the other', async () 
   const [how] = await handleTripButton(which.buttons[0][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ });
   const taxiCar = how.buttons.flat().find((b) => b.label === 'Taxi there, car back').action;
   const [first] = await handleTripButton(taxiCar, { person_id: JOHN.person_id }, john, { timeZone: TZ });
-  assert.match(first.text, /Done: Ballet @ River - Cel .*John L takes it \(drop-off: taxi\)/);
+  assert.match(first.text, /: Ballet @ River - Cel: Taxi there \(book \d\d:\d\d\), John picks up \(leave \d\d:\d\d\)\.\nReminders: \d\d:\d\d book the taxi to Ballet; /);
   assert.match(first.text, /Now Acro @ Dunearn - Ang: how\?$/);
   const wait = first.buttons.flat().find((b) => b.label === 'Drop off and wait').action;
   const [second] = await handleTripButton(wait, { person_id: JOHN.person_id }, john, { timeZone: TZ });
-  assert.match(second.text, /Acro @ Dunearn - Ang .*John L takes it \(waits there\)/);
+  assert.match(second.text, /: Acro @ Dunearn - Ang: John drives there \(leave \d\d:\d\d\), waits there, picks up at 17:00/);
+  assert.match(second.text, /pick-up of Acro \(you are there\)/);
   assert.deepEqual(second.buttons.flat().map((b) => b.label), ['My own plan…']);
   // Both decided: Option 1 of the clash is now refused as already chosen.
   const late = await handleTripButton(clash.reply.buttons[0][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ });
