@@ -25,5 +25,9 @@
   "_limits": "prj02-R1 US-4: run_max_steps and run_max_cost_usd cap each model run (the L2 limits of BS-2); the per-family limits (30 bot messages a day, US$5 a week) are family settings in the database. Patterns: requests to share outside the family (AI-L08 case 1) and event text that tries to instruct the bot (AI-L08 case 2); matched case-insensitively.",
   "stay_gap_minutes": 15,
   "plan_valid_minutes": 30,
-  "plan_model": "claude-haiku-5-5"
+  "plan_model": "claude-haiku-5-5",
+  "chain_stop_minutes": 2,
+  "chain_wait_max_minutes": 180,
+  "chain_late_minutes": 5,
+  "children_settle_minutes": 10
 }

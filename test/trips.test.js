@@ -204,7 +204,7 @@ test('test week: every reminder reaches the right adult on time, outside quiet h
   }
   assert.equal(db.trips.filter((x) => x.status === 'assigned').length, 9);
   // OneMap: home once, then each distinct place once (saved places reused).
-  assert.equal(onemap.calls.drive, 5, "5 distinct Singapore places (Toa Payoh scanned before e9 was deleted)");
+  assert.equal(onemap.calls.drive, 6, "5 distinct Singapore places (Toa Payoh scanned before e9 was deleted) + 1 drive between the clash's two places (US-8, saved once)");
 });
 
 test('a tap answers with who takes it and the leave times; foreign or stale buttons change nothing', async () => {
