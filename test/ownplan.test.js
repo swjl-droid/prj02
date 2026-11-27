@@ -113,10 +113,10 @@ test("own plan: John's words become one pick-up at 18:00 for both, shown first, 
   const r = await tickFamily(await db.job.load(), deps, now);
   const clash = r.outbox.find((m) => m.kind === 'clash' && m.chat === 111);
   assert.ok(clash, 'a clash message');
-  assert.equal(clash.reply.buttons[1][0].label, 'My own plan…');
+  assert.equal(clash.reply.buttons[2][0].label, 'My own plan…');
   // John taps "My own plan…".
   const john = db.botStore(JOHN.person_id);
-  const [prompt] = await handleTripButton(clash.reply.buttons[1][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ, planValidMinutes: 30 });
+  const [prompt] = await handleTripButton(clash.reply.buttons[2][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ, planValidMinutes: 30 });
   assert.match(prompt.text, /Tell me your plan in one message/);
   // His words: the fake model fills the form as the prompt asks.
   const seen = [];

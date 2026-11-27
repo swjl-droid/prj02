@@ -133,8 +133,11 @@ async function replayWeek() {
       // John answers each question as soon as it arrives (Mei gets it too, John taps first).
       if (m.chat === JOHN.chat && (m.kind === 'plan' || m.kind === 'clash')) {
         const buttons = m.reply.buttons.flat();
+        // Release-1 answers (John drives there and back, or the whole trip by taxi) as 'tr:' taps, so the
+        // week keeps its standard leave times; the ways of US-9 are tested in test/ways.test.js.
+        const trip = db.reminders.find((x) => x.id === m.id)?.trip_id;
         const action = m.kind === 'clash' ? buttons[0].action
-          : choice(m.reply.text) === 'taxi' ? buttons.find((b) => b.label === 'Taxi').action : buttons.find((b) => b.label === 'John').action;
+          : choice(m.reply.text) === 'taxi' ? `tr:${trip}:taxi` : `tr:${trip}:${JOHN.person_id.slice(0, 8)}`;
         const [reply] = await handleTripButton(action, { person_id: JOHN.person_id }, db.botStore(JOHN.person_id), { timeZone: TZ });
         sent.push({ at: local(now), chat: JOHN.chat, kind: 'tap-reply', text: reply.text });
       }
@@ -171,7 +174,7 @@ test('test week: every reminder reaches the right adult on time, outside quiet h
   const clash = bot.filter((m) => m.kind === 'clash');
   assert.deepEqual(clash.map((m) => m.chat).sort(), [111, 222]);
   assert.match(clash[0].text, /Clash on Sat 28 Nov.*Mei ballet 09:00-10:00 \(leave 08:38 for drop-off, 09:43 for pick-up\).*Ethan football 09:15-10:15 \(leave 08:50 for drop-off.*Option 1: John drives \[TEST\] Mei ballet; \[TEST\] Ethan football by taxi.*My own plan/s);
-  assert.equal(clash[0].buttons[1][0].label, 'My own plan…');
+  assert.deepEqual(clash[0].buttons.slice(1).flat().map((b) => b.label), ['Other ways…', 'My own plan…']);
   assert.equal(rem('Mei ballet', 'plan').length + rem('Ethan football', 'plan').length, 0);
   // Option 1 tapped: John drives ballet (drive 12, leave 08:38); football by taxi, reminder to John
   // 10 min earlier than the car leave time (taxi booking lead, Hub row 277).

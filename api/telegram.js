@@ -28,7 +28,16 @@ export async function POST(request) {
     const replies = await inTransaction((store) => handle(msg, store, cfg, realDeps(cfg)));
     if (msg.callbackId) await tg.answerButton(msg.callbackId).catch(() => {});
     // A reply goes to the sender's chat, or (warnings) to another adult of the same family.
-    for (const r of replies) await tg.send(r.chat ?? msg.chatId, r);
+    // A reply with `edit` replaces the tapped message (US-9: options gone once chosen); if Telegram
+    // cannot edit it (too old, deleted), a full reply is sent instead and a buttons-only change is dropped.
+    for (const r of replies) {
+      if (r.edit && msg.messageId) {
+        const ok = await tg.edit(msg.chatId, msg.messageId, r).then(() => true, () => false);
+        if (ok || r.edit === 'buttons') continue;
+      }
+      if (r.edit === 'buttons') continue;
+      await tg.send(r.chat ?? msg.chatId, r);
+    }
     return Response.json({ ok: true, replies: replies.length });
   } catch (e) {
     console.error('prj02 telegram webhook failed:', e.type ?? e.code ?? e.name);
