@@ -19,7 +19,7 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     savePlace: async (k, lat, lng, min, source, route = 'drive') => { db.places.set(`${route}|${k}`, { drive_min: min, source, lat, lng }); },
     upsertTrip: async (t) => {
       let x = db.trips.find((y) => y.event_id === t.event_id && y.event_start === iso(t.start));
-      if (!x) { x = { id: uuid(), status: 'open', owner_person_id: null, owner_mode: null }; db.trips.push(x); }
+      if (!x) { x = { id: uuid(), status: 'open', owner_person_id: null, owner_mode: null, hold_state: 'none' }; db.trips.push(x); }
       Object.assign(x, { event_id: t.event_id, event_start: iso(t.start), event_end: iso(t.end), title: t.title, location: t.location,
         drive_min: t.drive_min, drive_source: t.drive_source, drop_leave_at: iso(t.drop_leave), pick_leave_at: iso(t.pick_leave),
         drop_send_at: iso(t.drop_send), pick_send_at: iso(t.pick_send) });
@@ -39,19 +39,27 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     trips: async (from, to) => db.trips.filter((t) => t.event_start >= iso(from) && t.event_start < iso(to)).sort((a, b) => a.event_start.localeCompare(b.event_start)),
     trip: async (id) => db.trips.find((t) => t.id === id) ?? null,
     queue: async (trip, kind, person, at, payload) => {
-      if (!['plan', 'clash'].includes(kind)) throw new Error('the job queues only plan and clash messages');
+      if (!['plan', 'clash', 'warning'].includes(kind)) throw new Error('the job queues only plan, clash and warning messages');
+      if (db.settings.paused_at) return false; // paused: nothing new is queued
       if (db.reminders.some((r) => r.trip_id === trip && r.kind === kind && r.person_id === person)) return false;
       db.reminders.push({ id: uuid(), trip_id: trip, kind, person_id: person, send_at: iso(at), status: 'due', payload: payload ?? {} });
       return true;
     },
     claimDue: async (limit) => {
       const now = clock();
+      // As job_claim_due(): nothing while paused, never more than the day's allowance (US-4).
+      if (db.settings.paused_at) return [];
+      const day = new Date(now + 8 * 3600e3).toISOString().slice(0, 10); // Singapore day
+      const sentToday = db.reminders.filter((r) => r.status === 'sent' && new Date(Date.parse(r.sent_at) + 8 * 3600e3).toISOString().slice(0, 10) === day).length;
+      const left = Math.min(limit, (db.settings.max_messages_day ?? 30) - sentToday);
+      if (left <= 0) return [];
       const due = db.reminders.filter((r) => r.status === 'due' && Date.parse(r.send_at) <= now)
-        .sort((a, b) => a.send_at.localeCompare(b.send_at)).slice(0, limit);
+        .sort((a, b) => a.send_at.localeCompare(b.send_at)).slice(0, left);
       for (const r of due) { r.status = 'sent'; r.sent_at = new Date(now).toISOString(); }
       return due.map((r) => ({ ...r }));
     },
     markFailed: async (id) => { const r = db.reminders.find((x) => x.id === id); if (r) r.status = 'failed'; },
+    holdTrip: async (id) => { const t = db.trips.find((x) => x.id === id); if (!t || (t.hold_state ?? 'none') !== 'none') return false; t.hold_state = 'held'; return true; },
   };
 
   /** The chat bot's store for one adult (people, trips, assign_trips, clash_options). */
@@ -59,6 +67,13 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     people: async () => adults.map((a) => ({ id: a.person_id, display_name: a.display_name })),
     trip: async (id) => db.trips.find((t) => t.id === id) ?? null,
     trips: async (from, to) => db.job.trips(from, to),
+    releaseTrip: async (id) => {
+      const t = db.trips.find((x) => x.id === id);
+      if (!t || t.hold_state !== 'held') return { ok: false, reason: 'unknown' };
+      t.hold_state = 'released';
+      for (const r of db.reminders) if (r.trip_id === id && r.kind === 'warning' && r.status === 'due') r.status = 'skipped';
+      return { ok: true };
+    },
     clashOptions: async (id) => db.reminders.find((r) => r.id === id && r.kind === 'clash')?.payload ?? null,
     assignTrips: async (choices) => {
       for (const c of choices) {

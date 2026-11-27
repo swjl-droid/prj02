@@ -7,5 +7,20 @@
   "calendar_model": "claude-haiku-5-5",
   "change_valid_minutes": 30,
   "default_event_minutes": 60,
-  "search_days": 14
+  "search_days": 14,
+  "run_max_steps": 8,
+  "run_max_cost_usd": 0.5,
+  "outside_share_patterns": [
+    "\\b(share|send|forward|give|tell|show|pass)\\b[\\s\\S]{0,100}(\\b\\d{6,15}\\b|@[A-Za-z][A-Za-z0-9_]{4,}|t\\.me/|telegram\\s*id)",
+    "\\binvite\\b[\\s\\S]{0,100}(@[A-Za-z][A-Za-z0-9_]{4,}|t\\.me/|telegram\\s*id)",
+    "(\\b\\d{6,15}\\b|@[A-Za-z][A-Za-z0-9_]{4,}|t\\.me/|telegram\\s*id)[\\s\\S]{0,60}\\b(share|send|forward|invite)\\b"
+  ],
+  "instruction_patterns": [
+    "\\b(invite|share|add|grant|give)\\b[\\s\\S]{0,60}\\b(calendar|family|access|bot|plan)\\b",
+    "\\b(ignore|disregard|forget)\\b[\\s\\S]{0,40}\\b(instructions?|rules|above|previous|prior)\\b",
+    "\\b(bot|assistant|claude|ai|telegram)\\b\\s*[:,]",
+    "t\\.me/",
+    "\\b(send|forward)\\b[\\s\\S]{0,60}(@[A-Za-z][A-Za-z0-9_]{4,}|\\b\\d{6,15}\\b|telegram)"
+  ],
+  "_limits": "prj02-R1 US-4: run_max_steps and run_max_cost_usd cap each model run (the L2 limits of BS-2); the per-family limits (30 bot messages a day, US$5 a week) are family settings in the database. Patterns: requests to share outside the family (AI-L08 case 1) and event text that tries to instruct the bot (AI-L08 case 2); matched case-insensitively."
 }

@@ -27,7 +27,8 @@ export async function POST(request) {
     const cfg = botConfig({ botUsername });
     const replies = await inTransaction((store) => handle(msg, store, cfg, realDeps(cfg)));
     if (msg.callbackId) await tg.answerButton(msg.callbackId).catch(() => {});
-    for (const r of replies) await tg.send(msg.chatId, r);
+    // A reply goes to the sender's chat, or (warnings) to another adult of the same family.
+    for (const r of replies) await tg.send(r.chat ?? msg.chatId, r);
     return Response.json({ ok: true, replies: replies.length });
   } catch (e) {
     console.error('prj02 telegram webhook failed:', e.type ?? e.code ?? e.name);
