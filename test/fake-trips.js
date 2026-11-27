@@ -5,7 +5,7 @@ let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
 
 export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone = 'Asia/Singapore' }) {
-  const db = { trips: [], reminders: [], places: new Map(), settings: { ...settings }, adults, sent: [] };
+  const db = { trips: [], reminders: [], places: new Map(), settings: { ...settings }, adults, sent: [], plans: [] };
   const iso = (d) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString());
   let clock = () => Date.now();
   db.setClock = (fn) => { clock = fn; };
@@ -22,9 +22,10 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
       if (!x) { x = { id: uuid(), status: 'open', owner_person_id: null, owner_mode: null, hold_state: 'none' }; db.trips.push(x); }
       Object.assign(x, { event_id: t.event_id, event_start: iso(t.start), event_end: iso(t.end), title: t.title, location: t.location,
         drive_min: t.drive_min, drive_source: t.drive_source, drop_leave_at: iso(t.drop_leave), pick_leave_at: iso(t.pick_leave),
-        drop_send_at: iso(t.drop_send), pick_send_at: iso(t.pick_send) });
+        drop_send_at: iso(t.drop_send), pick_send_at: iso(t.pick_send), drop_needed: t.drop_needed ?? true, pick_needed: t.pick_needed ?? true });
       if (x.status === 'cancelled') x.status = 'open';
       for (const r of db.reminders) if (r.trip_id === x.id && r.status === 'due' && (r.kind === 'drop' || r.kind === 'pick')) r.send_at = r.kind === 'drop' ? x.drop_send_at : x.pick_send_at;
+      for (const r of db.reminders) if (r.trip_id === x.id && r.status === 'due' && ((r.kind === 'drop' && !x.drop_needed) || (r.kind === 'pick' && !x.pick_needed))) r.status = 'skipped';
       return x.id;
     },
     cancelMissing: async (from, to, keep) => {
@@ -67,6 +68,51 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
     people: async () => adults.map((a) => ({ id: a.person_id, display_name: a.display_name })),
     trip: async (id) => db.trips.find((t) => t.id === id) ?? null,
     trips: async (from, to) => db.job.trips(from, to),
+    // Own plans (US-6), as plan_await / plan_pending / plan_propose / plan_decide.
+    calendar: async () => ({ external_id: 'cal', time_zone: timeZone }),
+    familySettings: async () => db.settings,
+    planAwait: async (clash, minutes) => {
+      const m = db.reminders.find((r) => r.id === clash && r.kind === 'clash');
+      if (!m) return { ok: false, reason: 'unknown' };
+      for (const p of db.plans) if (p.person === personId && ['awaiting', 'proposed'].includes(p.status)) p.status = 'expired';
+      const p = { id: uuid(), person: personId, clash, status: 'awaiting', proposal: [], expires: clock() + minutes * 60_000 };
+      db.plans.push(p);
+      return { ok: true, plan: p.id };
+    },
+    planPending: async () => {
+      const p = db.plans.filter((x) => x.person === personId && ['awaiting', 'proposed'].includes(x.status) && x.expires > clock()).at(-1);
+      if (!p) return null;
+      return { plan: p.id, status: p.status, proposal: p.proposal, trips: db.reminders.find((r) => r.id === p.clash).payload.trips };
+    },
+    planPropose: async (id, proposal) => {
+      const p = db.plans.find((x) => x.id === id && x.person === personId && ['awaiting', 'proposed'].includes(x.status) && x.expires > clock());
+      if (!p) return false;
+      Object.assign(p, { status: 'proposed', proposal }); return true;
+    },
+    planDecide: async (id, yes) => {
+      const p = db.plans.find((x) => x.id === id);
+      if (!p) return { ok: false, reason: 'unknown' };
+      if (p.person !== personId) return { ok: false, reason: 'not_yours' };
+      if (p.status !== 'proposed') return { ok: false, reason: p.status };
+      if (!yes) { p.status = 'declined'; return { ok: true, status: 'declined' }; }
+      for (const c of p.proposal) {
+        const t = db.trips.find((x) => x.id === c.trip);
+        if (!t || t.status === 'cancelled') throw new Error('plan names an unknown trip');
+        if (c.mode === 'adult' && !adults.some((a) => a.person_id === c.person)) throw new Error('plan names someone outside the family');
+        const who = c.mode === 'adult' ? c.person : personId;
+        Object.assign(t, { status: 'assigned', owner_mode: c.mode, owner_person_id: c.mode === 'adult' ? c.person : null,
+          drop_mode: c.drop === 'none' ? 'none' : null, pick_mode: c.pick === 'none' ? 'none' : null, pick_at: c.pick_at ?? null,
+          pick_leave_at: c.pick_leave ?? t.pick_leave_at, pick_send_at: c.pick_send ?? t.pick_send_at });
+        db.reminders = db.reminders.filter((r) => !(r.trip_id === t.id && ['drop', 'pick'].includes(r.kind) && r.status === 'due'));
+        for (const kind of ['drop', 'pick']) {
+          if (t[`${kind}_needed`] === false || t[`${kind}_mode`] === 'none') continue;
+          db.reminders.push({ id: uuid(), trip_id: t.id, kind, person_id: who, send_at: kind === 'drop' ? t.drop_send_at : t.pick_send_at, status: 'due', payload: {} });
+        }
+        for (const r of db.reminders) if (r.trip_id === t.id && ['plan', 'clash'].includes(r.kind) && r.status === 'due') r.status = 'skipped';
+      }
+      p.status = 'applied'; db.settings.last_scan_at = null;
+      return { ok: true, status: 'applied', trips: p.proposal.length };
+    },
     releaseTrip: async (id) => {
       const t = db.trips.find((x) => x.id === id);
       if (!t || t.hold_state !== 'held') return { ok: false, reason: 'unknown' };
@@ -83,7 +129,8 @@ export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone 
         const who = c.mode === 'adult' ? c.person : personId;
         Object.assign(t, { status: 'assigned', owner_mode: c.mode, owner_person_id: c.mode === 'adult' ? c.person : null, assigned_by: personId });
         db.reminders = db.reminders.filter((r) => !(r.trip_id === t.id && ['drop', 'pick'].includes(r.kind) && r.status === 'due'));
-        for (const kind of ['drop', 'pick']) {
+        Object.assign(t, { drop_mode: null, pick_mode: null, pick_at: null });
+        for (const kind of ['drop', 'pick'].filter((k) => t[`${k}_needed`] !== false)) {
           const old = db.reminders.find((r) => r.trip_id === t.id && r.kind === kind && r.person_id === who);
           if (old) Object.assign(old, { send_at: kind === 'drop' ? t.drop_send_at : t.pick_send_at, status: 'due' });
           else db.reminders.push({ id: uuid(), trip_id: t.id, kind, person_id: who, send_at: kind === 'drop' ? t.drop_send_at : t.pick_send_at, status: 'due', payload: {} });

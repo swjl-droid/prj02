@@ -170,7 +170,8 @@ test('test week: every reminder reaches the right adult on time, outside quiet h
   // e3 + e4 clash on the one car: a clash message with 2 options to both adults, no plan message.
   const clash = bot.filter((m) => m.kind === 'clash');
   assert.deepEqual(clash.map((m) => m.chat).sort(), [111, 222]);
-  assert.match(clash[0].text, /Clash on Sat 28 Nov.*Mei ballet 09:00 \(leave 08:38\).*Ethan football 09:15 \(leave 08:50\).*Option 1: John drives \[TEST\] Mei ballet; \[TEST\] Ethan football by taxi/s);
+  assert.match(clash[0].text, /Clash on Sat 28 Nov.*Mei ballet 09:00-10:00 \(leave 08:38 for drop-off, 09:43 for pick-up\).*Ethan football 09:15-10:15 \(leave 08:50 for drop-off.*Option 1: John drives \[TEST\] Mei ballet; \[TEST\] Ethan football by taxi.*My own plan/s);
+  assert.equal(clash[0].buttons[1][0].label, 'My own plan…');
   assert.equal(rem('Mei ballet', 'plan').length + rem('Ethan football', 'plan').length, 0);
   // Option 1 tapped: John drives ballet (drive 12, leave 08:38); football by taxi, reminder to John
   // 10 min earlier than the car leave time (taxi booking lead, Hub row 277).

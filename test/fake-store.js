@@ -69,6 +69,7 @@ export function fakeDb() {
         if (!cur) throw new Error('no request context');
         return { paused: !!db.paused[cur.family_id], week_cost_usd: db.weekCost[cur.family_id] ?? 0, week_max_usd: db.weekMax };
       },
+      async planPending() { return null; },
       async adultChats() {
         return db.people.filter((p) => p.family_id === cur.family_id)
           .map((p) => ({ person_id: p.id, chat: db.contacts.find((c) => c.person_id === p.id)?.external_id }));
