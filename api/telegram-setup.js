@@ -22,6 +22,8 @@ export async function GET() {
     await tg.call('setMyCommands', {
       commands: [
         { command: 'invite', description: 'One-time join link for another adult (admins)' },
+        { command: 'pause', description: 'Stop all bot messages and AI for the family' },
+        { command: 'resume', description: 'Switch the bot back on' },
         { command: 'notice', description: 'The data notice' },
         { command: 'forgetme', description: 'Leave and delete my data' },
       ],

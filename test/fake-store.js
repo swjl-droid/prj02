@@ -1,7 +1,7 @@
 // In-memory stand-in for the app_prj02 functions (same answers as the SQL in
 // ai-platform supabase/migrations/*_prj02_tenancy.sql), so the bot logic is tested without a database.
 export function fakeDb() {
-  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0, calendars: {}, changes: [] };
+  const db = { families: [], people: [], contacts: [], consents: [], invites: [], refusals: 0, seq: 0, calendars: {}, changes: [], paused: {}, weekCost: {}, weekMax: 5 };
   const id = (p) => `${p}-${++db.seq}`;
   const norm = (c) => String(c ?? '').replace(/\s/g, '').toLowerCase();
   db.addFamily = (name, code, isAdmin = true, hoursLeft = 48) => {
@@ -63,6 +63,16 @@ export function fakeDb() {
         return { 'app_prj02.people': 1 };
       },
       async noteRefusal() { db.refusals += 1; },
+      // Limits (US-4), as app_prj02.set_pause() / budget() for the current person's family.
+      async setPause(on) { db.paused[cur.family_id] = !!on; return { ok: true, paused: !!on }; },
+      async budget() {
+        if (!cur) throw new Error('no request context');
+        return { paused: !!db.paused[cur.family_id], week_cost_usd: db.weekCost[cur.family_id] ?? 0, week_max_usd: db.weekMax };
+      },
+      async adultChats() {
+        return db.people.filter((p) => p.family_id === cur.family_id)
+          .map((p) => ({ person_id: p.id, chat: db.contacts.find((c) => c.person_id === p.id)?.external_id }));
+      },
       // Calendar (same answers as propose_change / decide_change / record_result).
       async calendar() { return cur ? (db.calendars[cur.family_id] ?? null) : null; },
       async proposeChange(action, eventId, proposal, minutes) {

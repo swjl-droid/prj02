@@ -14,6 +14,7 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 | `lib/bot/` | Bot logic, channel-free: `join.js` join flow and access rules (US-1); `calendar.js` calendar changes by chat, written only after the asking adult's yes (US-2); `interpret.js` the model fills a form, the code checks it; `deps.js` real gateway and Google helpers |
 | `api/tick.js` | The scheduler's tick (ADR-02): Supabase Cron calls it every minute; role `app_prj02_job` over `JOB_DB_URL`; sends after commit |
 | `lib/trips/` | US-3: `plan.js` leave times, quiet hours, clashes (code does the sums); `tick.js` scan, plan round, due messages; `messages.js` texts |
+| `lib/bot/limits.js`, `lib/bot/guard.js` | US-4: step and cost caps per model run (one Langfuse session per run); red-team guards (sharing outside the family, instructions in event notes), patterns in `config/settings.json` |
 | `lib/bot/trips.js` | Taps on 'who takes it?' and clash options (`assign_trips`), and "what's on" answers |
 | `lib/route/onemap.js` | Travel time from OneMap per route (drive, public transport; token in memory only); else the family's estimate for that way of travel (`app_prj02.travel_modes`, Hub row 277) |
 | `api/test-week.js` | Preview only: create / delete the 10 `[TEST]` events of the US-3 test week |
@@ -36,5 +37,9 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 5. Children do not use the bot in release 1 (Hub rows 127 and 155).
 7. No bot-started message in quiet hours; each message is claimed once (never sent twice); drop-off and
    pick-up reminders exist only after an adult's tap.
+8. Limits (US-4): every model call goes through `withRunLimits` (8 steps, US$0.50 per run); the chat bot
+   checks `budget()` (paused, US$5 per family per 7 days) before a model call; the scheduler sends at most
+   `max_messages_day` (30) bot-started messages per family per day and nothing while paused (database).
+   A request to share outside the family is refused in code, never sent to the model.
 6. The model only fills a form (`calendar_request` tool); code checks every field and decides. No calendar
    write without a `decide_change()` yes from the adult who asked.
