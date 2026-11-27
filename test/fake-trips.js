@@ -4,7 +4,7 @@
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
 
-export function fakeTripsDb({ settings, adults, country = 'SG', timeZone = 'Asia/Singapore' }) {
+export function fakeTripsDb({ settings, adults, modes, country = 'SG', timeZone = 'Asia/Singapore' }) {
   const db = { trips: [], reminders: [], places: new Map(), settings: { ...settings }, adults, sent: [] };
   const iso = (d) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString());
   let clock = () => Date.now();
@@ -14,9 +14,9 @@ export function fakeTripsDb({ settings, adults, country = 'SG', timeZone = 'Asia
     families: async () => ['fam-1'],
     begin: async () => true,
     load: async () => ({ family_id: 'fam-1', country, settings: db.settings, calendar_id: 'cal', time_zone: timeZone,
-      home: db.settings.home_lat != null ? { lat: db.settings.home_lat, lng: db.settings.home_lng } : null, adults }),
+      home: db.settings.home_lat != null ? { lat: db.settings.home_lat, lng: db.settings.home_lng } : null, adults, modes }),
     places: async () => new Map(db.places),
-    savePlace: async (k, lat, lng, min, source) => { db.places.set(k, { drive_min: min, source }); },
+    savePlace: async (k, lat, lng, min, source, route = 'drive') => { db.places.set(`${route}|${k}`, { drive_min: min, source, lat, lng }); },
     upsertTrip: async (t) => {
       let x = db.trips.find((y) => y.event_id === t.event_id && y.event_start === iso(t.start));
       if (!x) { x = { id: uuid(), status: 'open', owner_person_id: null, owner_mode: null }; db.trips.push(x); }
@@ -75,6 +75,7 @@ export function fakeTripsDb({ settings, adults, country = 'SG', timeZone = 'Asia
         }
         for (const r of db.reminders) if (r.trip_id === t.id && ['plan', 'clash'].includes(r.kind) && r.status === 'due') r.status = 'skipped';
       }
+      db.settings.last_scan_at = null; // the next tick re-plans the family (travel time follows the way of travel)
       return { ok: true, assigned: choices.length };
     },
   });

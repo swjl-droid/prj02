@@ -15,7 +15,7 @@ scan, lint, working with John). Read it first; this file only adds what is speci
 | `api/tick.js` | The scheduler's tick (ADR-02): Supabase Cron calls it every minute; role `app_prj02_job` over `JOB_DB_URL`; sends after commit |
 | `lib/trips/` | US-3: `plan.js` leave times, quiet hours, clashes (code does the sums); `tick.js` scan, plan round, due messages; `messages.js` texts |
 | `lib/bot/trips.js` | Taps on 'who takes it?' and clash options (`assign_trips`), and "what's on" answers |
-| `lib/route/onemap.js` | Drive time from OneMap (token in memory only); else the family's estimate |
+| `lib/route/onemap.js` | Travel time from OneMap per route (drive, public transport; token in memory only); else the family's estimate for that way of travel (`app_prj02.travel_modes`, Hub row 277) |
 | `api/test-week.js` | Preview only: create / delete the 10 `[TEST]` events of the US-3 test week |
 | `lib/calendar/` | `google.js` Google Calendar through the bot's service account (`GOOGLE_SA_KEY`); `dates.js` dates in the family's time zone |
 | `eval/` | Golden set of noisy calendar requests and its checker (with self-test); live run on a preview at `/api/eval-calendar` |
