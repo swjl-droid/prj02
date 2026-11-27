@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family orchestrator: privacy and data notice</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1rem; color: #1f2937; line-height: 1.5; }
+    h1 { font-size: 1.6rem; } h2 { font-size: 1.1rem; margin-top: 1.8rem; }
+    .meta { color: #6b7280; font-size: 0.9rem; }
+    .note { background: #fef3c7; padding: 0.7rem 1rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Family orchestrator: privacy and data notice</h1>
+  <p class="meta">Version v1, 27 November 2026 (Singapore time). Telegram bot of the Family orchestrator prototype (prj02).</p>
+  <p class="note">This is a prototype for one family. Before it is opened to other families, this notice will be reviewed by someone qualified in Singapore law.</p>
+
+  <h2>1. Who runs it</h2>
+  <p>John runs this bot for his own family, as a private, non-commercial prototype in Singapore. Questions go to John directly or through the family admin in the bot.</p>
+
+  <h2>2. What it is</h2>
+  <p>A Telegram assistant that keeps the family's shared calendar tidy: it helps adults add, move or cancel family events, sends reminders and flags pick-up clashes. Its replies are written by an AI model (Claude, by Anthropic). It never books, pays, messages people outside the family or shares live location, and any change to the calendar waits for an adult's yes.</p>
+
+  <h2>3. What data it keeps, and why</h2>
+  <ul>
+    <li><strong>About you:</strong> your name as shown in Telegram, your Telegram account number, whether you are a family admin, and when you agreed to this notice. Used to recognise you and keep others out.</li>
+    <li><strong>About the family:</strong> the family's name and country, one-time join links (kept only as a scrambled fingerprint), and, from the next steps of release 1, the calendar changes you ask for and a log of what the bot did. Used to run the calendar features and to check them.</li>
+    <li><strong>Not kept:</strong> message content in AI logs (only cost, timing and status are logged), and nothing from your other Telegram chats.</li>
+  </ul>
+
+  <h2>4. Where data goes</h2>
+  <ul>
+    <li><strong>Our database:</strong> Supabase, in Singapore. Each family can only reach its own data.</li>
+    <li><strong>Telegram:</strong> carries the messages between you and the bot.</li>
+    <li><strong>Anthropic (AI model):</strong> receives the text of a request so the bot can understand it; it is processed outside Singapore and not used to train models under Anthropic's API terms.</li>
+    <li><strong>Google:</strong> the family's shared 'Family' calendar, where changes you approve are written.</li>
+    <li><strong>Hosting:</strong> Vercel, running the bot in Singapore.</li>
+  </ul>
+
+  <h2>5. Trial and end</h2>
+  <p>The prototype may change or stop at any time. If it stops, the family's data is deleted within 30 days.</p>
+
+  <h2>6. Your rights</h2>
+  <ul>
+    <li><strong>Leave and be forgotten:</strong> send <code>/forgetme</code> to the bot. Your data is deleted at once; if you were the last adult of your family, the family's data goes too. Records kept for cost accounting lose any link to you. A request made another way (to John) is answered within 7 days. Copies in the database provider's backups disappear when those backups expire.</li>
+    <li><strong>See this notice again:</strong> send <code>/notice</code>.</li>
+    <li><strong>Ask what is kept about you:</strong> ask John.</li>
+  </ul>
+
+  <h2>7. What not to send</h2>
+  <p>Please do not send passwords, bank or card details, NRIC numbers, health information or anything about people outside the family.</p>
+
+  <h2>8. Children</h2>
+  <p>Children do not use the bot in this release and are never invited to it. Calendar events about children are handled by the adults. A children's mode, with extra safeguards and a parent's approval for each child, may come in a later release.</p>
+
+  <h2>9. Limits and responsibility</h2>
+  <p>This is a prototype: reminders or clash alerts may be late, wrong or missing. Keep checking the family calendar yourself; the bot is a helper, not a guarantee.</p>
+
+  <h2>10. Changes and contact</h2>
+  <p>When this notice changes, the bot shows the new version and you agree again before using it. Questions: John, the family admin.</p>
+</body>
+</html>

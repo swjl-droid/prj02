@@ -24,6 +24,18 @@ jobs:
       - name: Gateway unit tests (cost, masking, trace content, certificate check)
         run: node --test 'lib/gateway/test/*.test.js'
 
+  bot:
+    name: Bot tests (join flow, access rules, channel layer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: node --test 'test/*.test.js'
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
