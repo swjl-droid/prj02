@@ -12,7 +12,11 @@ import { fakeTripsDb } from './fake-trips.js';
 
 const TZ = 'Asia/Singapore';
 const S = { home_postal: '640123', home_lat: null, home_lng: null, cars: 1, plan_time: '19:00:00', quiet_start: '22:00:00',
-  quiet_end: '07:00:00', evening_slot: '21:30:00', drop_buffer_min: 10, pick_buffer_min: 5, default_drive_min: 20, scan_minutes: 15, last_scan_at: null };
+  quiet_end: '07:00:00', evening_slot: '21:30:00', drop_buffer_min: 10, pick_buffer_min: 5, scan_minutes: 15, last_scan_at: null };
+// The family's ways of travel (app_prj02.travel_modes). The estimates here are test data; John's
+// family has car 30, taxi 30 + 10, public transport 60 (Hub row 277).
+const MODES = { car: { route: 'drive', estimate_min: 20, lead_min: 0 }, taxi: { route: 'drive', estimate_min: 20, lead_min: 10 },
+  public: { route: 'pt', estimate_min: 45, lead_min: 0 } };
 const at = (s) => new Date(`${s}+08:00`);
 const local = (d) => { const p = localParts(TZ, d); return `${p.date} ${p.time}`; };
 
@@ -91,17 +95,22 @@ function fakeOneMap() {
   const where = { '640123': [1.35, 103.70], 'bishan library': [1.35, 103.85], 'jurong west swimming complex': [1.34, 103.69],
     'toa payoh stadium': [1.33, 103.85], 'toa payoh': [1.33, 103.84], bishan: [1.35, 103.84] };
   const minutes = { '1.35,103.85': 12, '1.34,103.69': 25, '1.33,103.85': 15, '1.33,103.84': 14, '1.35,103.84': 12 };
-  const calls = { find: 0, drive: 0 };
+  const calls = { find: 0, drive: 0, pt: 0 };
   return {
     calls,
     find: async (q) => { calls.find++; const p = where[placeKey(q)]; return p ? { lat: p[0], lng: p[1] } : null; },
-    driveMinutes: async (_from, to) => { calls.drive++; return minutes[`${to.lat},${to.lng}`] ?? 30; },
+    // Public transport takes twice the drive time plus 5 minutes in this fake.
+    routeMinutes: async (_from, to, route) => {
+      calls[route] = (calls[route] ?? 0) + 1;
+      const d = minutes[`${to.lat},${to.lng}`] ?? 30;
+      return route === 'pt' ? d * 2 + 5 : d;
+    },
   };
 }
 
 async function replayWeek() {
   let now = at('2026-11-27T18:00:00');
-  const db = fakeTripsDb({ settings: S, adults: [JOHN, MEI] });
+  const db = fakeTripsDb({ settings: S, adults: [JOHN, MEI], modes: MODES });
   db.setClock(() => now.getTime());
   let events = weekEvents();
   const onemap = fakeOneMap();
@@ -163,14 +172,16 @@ test('test week: every reminder reaches the right adult on time, outside quiet h
   assert.deepEqual(clash.map((m) => m.chat).sort(), [111, 222]);
   assert.match(clash[0].text, /Clash on Sat 28 Nov.*Mei ballet 09:00 \(leave 08:38\).*Ethan football 09:15 \(leave 08:50\).*Option 1: John drives \[TEST\] Mei ballet; \[TEST\] Ethan football by taxi/s);
   assert.equal(rem('Mei ballet', 'plan').length + rem('Ethan football', 'plan').length, 0);
-  // Option 1 tapped: John drives ballet (drive 12, leave 08:38); football by taxi, reminder to John.
+  // Option 1 tapped: John drives ballet (drive 12, leave 08:38); football by taxi, reminder to John
+  // 10 min earlier than the car leave time (taxi booking lead, Hub row 277).
   assert.deepEqual(rem('Mei ballet', 'drop').map((m) => [m.at, m.chat]), [['2026-11-28 08:38', 111]]);
   const taxi = rem('Ethan football', 'drop');
-  assert.deepEqual(taxi.map((m) => [m.at, m.chat]), [['2026-11-28 08:50', 111]]);
+  assert.deepEqual(taxi.map((m) => [m.at, m.chat]), [['2026-11-28 08:40', 111]]);
   assert.match(taxi[0].text, /^Book the taxi now/);
-  // e5 has no location: the estimate (20 min, 'est.'), taxi chosen.
+  // e5 has no location: the car estimate (20 min, 'est.') in the question; taxi chosen, so the
+  // taxi estimate plus its booking lead (20 + 10): 10 min earlier.
   assert.match(rem('Ethan piano', 'plan')[0].text, /drive about 20 min \(est\.\)/i);
-  assert.deepEqual(rem('Ethan piano', 'drop').map((m) => m.at), ['2026-11-28 13:30']);
+  assert.deepEqual(rem('Ethan piano', 'drop').map((m) => m.at), ['2026-11-28 13:20']);
   // e6 abroad: OneMap finds nothing in Singapore, so the estimate.
   assert.match(rem("Dinner at Grandma's", 'plan')[0].text, /\(est\.\)/);
   // e7 reuses the saved place (spelled differently): 25 min, from OneMap.
@@ -196,7 +207,7 @@ test('test week: every reminder reaches the right adult on time, outside quiet h
 });
 
 test('a tap answers with who takes it and the leave times; foreign or stale buttons change nothing', async () => {
-  const db = fakeTripsDb({ settings: S, adults: [JOHN, MEI] });
+  const db = fakeTripsDb({ settings: S, adults: [JOHN, MEI], modes: MODES });
   const now = at('2026-11-28T08:00:00');
   db.setClock(() => now.getTime());
   const id = await db.job.upsertTrip({ event_id: 'x', start: at('2026-11-28T15:00:00'), end: at('2026-11-28T16:00:00'),
