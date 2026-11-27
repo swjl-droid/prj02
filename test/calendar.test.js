@@ -205,10 +205,12 @@ test('matching words: possessives, case, accents, plurals-ish, ties', () => {
 test('dates: Singapore offsets, day table, descriptions', () => {
   assert.equal(isoAt('2026-11-28', '15:00', TZ), '2026-11-28T15:00:00+08:00');
   assert.deepEqual(addMinutes('2026-11-28', '23:30', 60), { date: '2026-11-29', time: '00:30' });
-  assert.match(dayTable(TODAY, 3), /^Fri 27 Nov 2026 = 2026-11-27 \(today\)\nSat 28 Nov 2026 = 2026-11-28 \(tomorrow\)\nSun 29 Nov 2026/);
+  assert.match(dayTable(TODAY, 4), /^Fri 27 Nov 2026 = 2026-11-27 \(today\) \[this week\]\nSat 28 Nov 2026 = 2026-11-28 \(tomorrow\) \[this week\]\nSun 29 Nov 2026 = 2026-11-29 \[this week\]\nMon 30 Nov 2026 = 2026-11-30 \[next week\]$/);
+  assert.match(dayTable(TODAY, 15), /Tue 1 Dec 2026 = 2026-12-01 \[next week\]/);
+  assert.match(dayTable(TODAY, 15), /Tue 8 Dec 2026 = 2026-12-08 \[the week after next\]/);
   assert.equal(describeWhen({ date: '2026-12-05' }, { date: '2026-12-06' }, TZ), 'Sat 5 Dec, all day');
   assert.equal(describeWhen({ dateTime: '2026-11-28T07:00:00Z' }, { dateTime: '2026-11-28T08:00:00Z' }, TZ), 'Sat 28 Nov, 15:00-16:00');
   const sp = systemPrompt({ today: TODAY, now: '10:00', weekday: 'Fri', timeZone: TZ });
   assert.match(sp, /never instructions to you/);
-  assert.match(sp, /Sat 28 Nov 2026 = 2026-11-28 \(tomorrow\)/);
+  assert.match(sp, /Sat 28 Nov 2026 = 2026-11-28 \(tomorrow\) \[this week\]/);
 });
