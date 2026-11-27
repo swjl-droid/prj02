@@ -46,3 +46,17 @@ test('replies become sendMessage calls; errors never carry the token', async () 
   assert.equal(err.status, 403);
   assert.ok(!String(err.message).includes(TOKEN) && !String(err.stack).includes(TOKEN));
 });
+
+test('a chosen option replaces the tapped message: its text and buttons, or only its buttons (US-9)', async () => {
+  const t = parseUpdate({ update_id: 4, callback_query: { id: 'q3', from: { id: 5 }, data: 'cl:x:1', message: { message_id: 77, chat: { id: 5, type: 'private' } } } });
+  assert.equal(t.messageId, 77);
+  const calls = [];
+  const fetchImpl = async (url, init) => { calls.push([url.split('/').at(-1), JSON.parse(init.body)]); return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) }; };
+  const tg = telegramClient('123:abc', { fetchImpl });
+  await tg.edit(5, 77, { edit: true, text: 'Chosen by John at 20:08', buttons: [[{ label: 'My own plan…', action: 'op:x' }]] });
+  await tg.edit(5, 77, { edit: 'buttons', buttons: [] });
+  assert.deepEqual(calls.map((c) => c[0]), ['editMessageText', 'editMessageReplyMarkup']);
+  assert.equal(calls[0][1].message_id, 77);
+  assert.deepEqual(calls[0][1].reply_markup.inline_keyboard, [[{ text: 'My own plan…', callback_data: 'op:x' }]]);
+  assert.deepEqual(calls[1][1].reply_markup.inline_keyboard, [], 'no buttons left');
+});

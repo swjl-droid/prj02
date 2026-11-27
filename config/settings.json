@@ -1,6 +1,6 @@
 {
   "_comment": "prj02 settings (Hub row 128: every number a setting). Change here, not in code.",
-  "notice_version": "v2",
+  "notice_version": "v3",
   "notice_path": "/privacy.html",
   "invite_hours": 48,
   "max_display_name": 80,
@@ -29,5 +29,56 @@
   "chain_stop_minutes": 2,
   "chain_wait_max_minutes": 180,
   "chain_late_minutes": 5,
-  "children_settle_minutes": 10
+  "children_settle_minutes": 10,
+  "trip_ways": [
+    {
+      "id": "wait",
+      "label": "Drop off and wait",
+      "drop": "car",
+      "pick": "car",
+      "wait": true
+    },
+    {
+      "id": "back",
+      "label": "Drop off, someone picks up",
+      "drop": "car",
+      "pick": "car"
+    },
+    {
+      "id": "car_taxi",
+      "label": "Car there, taxi back",
+      "drop": "car",
+      "pick": "taxi"
+    },
+    {
+      "id": "car_public",
+      "label": "Car there, public transport back",
+      "drop": "car",
+      "pick": "public"
+    },
+    {
+      "id": "taxi_car",
+      "label": "Taxi there, car back",
+      "drop": "taxi",
+      "pick": "car"
+    },
+    {
+      "id": "public_taxi",
+      "label": "Public transport there, taxi back",
+      "drop": "public",
+      "pick": "taxi"
+    },
+    {
+      "id": "walk",
+      "label": "Walk",
+      "drop": "walk",
+      "pick": "walk"
+    }
+  ],
+  "max_options": 3,
+  "history_count": 4,
+  "history_days": 180,
+  "wait_max_minutes": 120,
+  "walk_max_minutes": 15,
+  "_ways": "prj02-R1 US-9 (Hub row 308): the ways of doing a trip. drop / pick: car, walk, taxi or public; wait: the adult waits there. Options are built from this list and the family's adults; max_options shown first (past choices of the last history_count times of the same activity, within history_days, then the rules: walk if walk_max_minutes or less, wait there if the activity lasts wait_max_minutes or less), the rest under 'Other ways…'. A new way is one more entry here."
 }

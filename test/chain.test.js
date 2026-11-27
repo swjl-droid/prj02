@@ -62,7 +62,9 @@ test('clash message: option 3 (John does both in a row), tapped: reminders per l
   assert.match(clash.reply.text, /Option 3: John does both: leave 14:54: Ballet @ River 15:03, then Acro @ Dunearn 15:20; wait there; pick up Acro @ Dunearn 17:00, then Ballet @ River 17:17; home ~17:41\./);
   assert.deepEqual(clash.reply.buttons[0].map((b) => b.label), ['Option 1', 'Option 2', 'Option 3']);
   const [done] = await handleTripButton(clash.reply.buttons[0][2].action, { person_id: JOHN.person_id }, db.botStore(JOHN.person_id), { timeZone: TZ });
-  assert.match(done.text, /^Done/);
+  assert.match(done.text, /^Chosen by John at \d\d:\d\d:\nDone/);
+  assert.equal(done.edit, true, 'the clash message is replaced: no options left to tap');
+  assert.deepEqual(done.buttons.flat().map((b) => b.label), ['My own plan…']);
   const due = db.reminders.filter((m) => m.status === 'due' && ['drop', 'pick'].includes(m.kind))
     .map((m) => [db.trips.find((t) => t.id === m.trip_id).event_id, m.kind, m.person_id === JOHN.person_id ? 'John' : 'other', hm(m.send_at)])
     .sort((a, b) => a[3].localeCompare(b[3]));
@@ -88,7 +90,7 @@ test("own plan in John's words: chained with his leave time, shown first, applie
   const r = await tickFamily(await db.job.load(), deps, now);
   const clash = r.outbox.find((m) => m.kind === 'clash' && m.chat === 111);
   const john = db.botStore(JOHN.person_id);
-  await handleTripButton(clash.reply.buttons[1][0].action, { person_id: JOHN.person_id }, john, { timeZone: TZ, planValidMinutes: 30 });
+  await handleTripButton(clash.reply.buttons.flat().find((b) => b.label === 'My own plan…').action, { person_id: JOHN.person_id }, john, { timeZone: TZ, planValidMinutes: 30 });
   const pending = await john.planPending();
   assert.equal(pending.between_min, 15, 'the drive between the two places comes with the clash');
   const n = (title) => pending.trips.map((id) => db.trips.find((t) => t.id === id).title).indexOf(title) + 1;
